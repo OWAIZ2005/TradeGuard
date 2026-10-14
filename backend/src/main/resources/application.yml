@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: tradeguard
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/tradeguard}
+    username: ${DB_USER:tradeguard}
+    password: ${DB_PASSWORD:tradeguard}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 50
+          time_zone: UTC
+        order_inserts: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  servlet:
+    multipart:
+      # Hard server-side cap. The configurable rule MAX_UPLOAD_SIZE_MB must be <= this.
+      max-file-size: 50MB
+      max-request-size: 51MB
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  port: ${PORT:8080}
+  error:
+    include-stacktrace: never
+    include-message: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+tradeguard:
+  demo:
+    # When true and the database has no batches, the bundled synthetic sample CSV is imported on startup.
+    load-on-startup: ${TRADEGUARD_DEMO_LOAD:false}
+
+logging:
+  level:
+    com.tradeguard: INFO

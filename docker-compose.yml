@@ -1,0 +1,53 @@
+# TradeGuard local stack: PostgreSQL + Spring Boot API + Next.js UI.
+# Start:  docker compose up --build -d      Stop: docker compose down
+# Configuration comes from .env (copy .env.example). Nothing secret is committed.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tradeguard}
+      POSTGRES_USER: ${POSTGRES_USER:-tradeguard}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env (copy .env.example)}
+    ports:
+      # Published for local tools and `mvn spring-boot:run`; 5433 avoids clashing with a native PostgreSQL on 5432.
+      - "${DB_PORT:-5433}:5432"
+    volumes:
+      - tradeguard-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build: ./backend
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-tradeguard}
+      DB_USER: ${POSTGRES_USER:-tradeguard}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      TRADEGUARD_DEMO_LOAD: ${TRADEGUARD_DEMO_LOAD:-true}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q UP"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        BACKEND_URL: http://backend:8080
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+
+volumes:
+  tradeguard-pgdata:

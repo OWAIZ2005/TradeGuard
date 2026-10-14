@@ -1,0 +1,11 @@
+.env
+node_modules/
+.next/
+backend/target/
+frontend/playwright-report/
+frontend/test-results/
+frontend/next-env.d.ts
+frontend/tsconfig.tsbuildinfo
+*.log
+.idea/
+.vscode/
